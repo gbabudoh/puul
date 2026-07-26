@@ -4,7 +4,7 @@ import '../services/api_client.dart';
 class AuthRepository {
   final ApiClient _apiClient;
 
-  AuthRepository(this.apiClient);
+  AuthRepository(this._apiClient);
 
   Future<UserModel> register({
     String? phoneNumber,
