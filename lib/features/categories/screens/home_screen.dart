@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../auth/screens/profile_screen.dart';
 import '../../auth/screens/login_screen.dart';
-import '../../connections/screens/connections_screen.dart';
 import '../../connections/screens/invite_contacts_screen.dart';
 import '../../connections/screens/find_friends_screen.dart';
 import '../../camera/screens/enhanced_camera_screen.dart';
 import '../../creator/screens/creator_dashboard_screen.dart';
+import '../../settings/screens/notifications_settings_screen.dart';
+import '../../settings/screens/privacy_settings_screen.dart';
+import '../../settings/screens/help_support_screen.dart';
 import 'category_detail_screen.dart';
 import '../widgets/create_puul_dialog.dart';
+import '../widgets/puul_search_delegate.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -263,8 +265,9 @@ class _HomeScreenState extends State<HomeScreen> {
             IconButton(
               icon: const Icon(Icons.search),
               onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Search coming soon!')),
+                showSearch(
+                  context: context,
+                  delegate: PuulSearchDelegate(categories: _demoCategories),
                 );
               },
             ),
@@ -997,9 +1000,68 @@ class _ConnectionsContentState extends State<_ConnectionsContent>
   ];
 
   final List<Map<String, dynamic>> _suggestions = [
-    {'id': '8', 'name': 'David Kim', 'username': '@davidk', 'avatar': 'D', 'mutualFriends': 5},
-    {'id': '9', 'name': 'Rachel Green', 'username': '@rachelg', 'avatar': 'R', 'mutualFriends': 3},
+    {'id': '8', 'name': 'David Kim', 'username': '@davidk', 'avatar': 'D', 'mutualFriends': 5, 'isFollowing': false},
+    {'id': '9', 'name': 'Rachel Green', 'username': '@rachelg', 'avatar': 'R', 'mutualFriends': 3, 'isFollowing': false},
   ];
+
+  void _toggleFollowFromFollowersTab(Map<String, dynamic> user) {
+    final newState = !(user['isFollowing'] as bool);
+    setState(() {
+      user['isFollowing'] = newState;
+      if (newState) {
+        _addToFollowing(user, followsYou: true);
+      } else {
+        _following.removeWhere((u) => u['id'] == user['id']);
+      }
+    });
+    _showFollowSnackBar(user['name'], newState);
+  }
+
+  void _unfollowUser(Map<String, dynamic> user) {
+    setState(() {
+      _following.removeWhere((u) => u['id'] == user['id']);
+      for (final follower in _followers) {
+        if (follower['id'] == user['id']) follower['isFollowing'] = false;
+      }
+      for (final suggestion in _suggestions) {
+        if (suggestion['id'] == user['id']) suggestion['isFollowing'] = false;
+      }
+    });
+    _showFollowSnackBar(user['name'], false);
+  }
+
+  void _toggleFollowSuggestion(Map<String, dynamic> user) {
+    final newState = !(user['isFollowing'] as bool);
+    setState(() {
+      user['isFollowing'] = newState;
+      if (newState) {
+        _addToFollowing(user, followsYou: false);
+      } else {
+        _following.removeWhere((u) => u['id'] == user['id']);
+      }
+    });
+    _showFollowSnackBar(user['name'], newState);
+  }
+
+  void _addToFollowing(Map<String, dynamic> user, {required bool followsYou}) {
+    if (_following.any((u) => u['id'] == user['id'])) return;
+    _following.add({
+      'id': user['id'],
+      'name': user['name'],
+      'username': user['username'],
+      'avatar': user['avatar'],
+      'followsYou': followsYou,
+    });
+  }
+
+  void _showFollowSnackBar(String name, bool isNowFollowing) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(isNowFollowing ? 'You are now following $name' : 'Unfollowed $name'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -1058,14 +1120,16 @@ class _ConnectionsContentState extends State<_ConnectionsContent>
             title: Text(user['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
             subtitle: Text(user['username']),
             trailing: ElevatedButton(
-              onPressed: () {},
+              onPressed: () => isFollowers
+                  ? _toggleFollowFromFollowersTab(user)
+                  : _unfollowUser(user),
               style: ElevatedButton.styleFrom(
-                backgroundColor: isFollowers 
+                backgroundColor: isFollowers
                     ? (user['isFollowing'] ? AppColors.primaryAccent : AppColors.secondaryAccent)
                     : AppColors.cardBackground,
                 foregroundColor: isFollowers ? Colors.white : AppColors.textPrimary,
               ),
-              child: Text(isFollowers 
+              child: Text(isFollowers
                   ? (user['isFollowing'] ? 'Following' : 'Follow Back')
                   : 'Following'),
             ),
@@ -1091,9 +1155,12 @@ class _ConnectionsContentState extends State<_ConnectionsContent>
             title: Text(user['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
             subtitle: Text('${user['mutualFriends']} mutual friends'),
             trailing: ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.secondaryAccent),
-              child: const Text('Follow'),
+              onPressed: () => _toggleFollowSuggestion(user),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: user['isFollowing'] ? AppColors.cardBackground : AppColors.secondaryAccent,
+                foregroundColor: user['isFollowing'] ? AppColors.textPrimary : Colors.black,
+              ),
+              child: Text(user['isFollowing'] ? 'Following' : 'Follow'),
             ),
           ),
         )),
@@ -1162,9 +1229,21 @@ class _ProfileContent extends StatelessWidget {
               builder: (_) => const CreatorDashboardScreen(),
             ));
           }),
-          _buildMenuItem(context, Icons.notifications, 'Notifications', () {}),
-          _buildMenuItem(context, Icons.lock, 'Privacy', () {}),
-          _buildMenuItem(context, Icons.help, 'Help & Support', () {}),
+          _buildMenuItem(context, Icons.notifications, 'Notifications', () {
+            Navigator.push(context, MaterialPageRoute(
+              builder: (_) => const NotificationsSettingsScreen(),
+            ));
+          }),
+          _buildMenuItem(context, Icons.lock, 'Privacy', () {
+            Navigator.push(context, MaterialPageRoute(
+              builder: (_) => const PrivacySettingsScreen(),
+            ));
+          }),
+          _buildMenuItem(context, Icons.help, 'Help & Support', () {
+            Navigator.push(context, MaterialPageRoute(
+              builder: (_) => const HelpSupportScreen(),
+            ));
+          }),
           const Divider(height: 32),
           _buildMenuItem(context, Icons.logout, 'Logout', () {
             Navigator.pushAndRemoveUntil(

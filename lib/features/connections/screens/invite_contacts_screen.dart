@@ -11,7 +11,7 @@ class InviteContactsScreen extends StatefulWidget {
 class _InviteContactsScreenState extends State<InviteContactsScreen> {
   final _searchController = TextEditingController();
   final Set<String> _selectedContacts = {};
-  bool _isLoading = false;
+  final bool _isLoading = false;
 
   // Demo contacts
   final List<Map<String, dynamic>> _contacts = [

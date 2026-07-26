@@ -344,7 +344,7 @@ class _CreatePuulDialogState extends State<CreatePuulDialog> {
         Switch(
           value: value,
           onChanged: onChanged,
-          activeColor: AppColors.primaryAccent,
+          activeThumbColor: AppColors.primaryAccent,
         ),
       ],
     );

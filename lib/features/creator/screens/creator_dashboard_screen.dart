@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
+import 'browse_campaigns_screen.dart';
+import 'campaign_analytics_screen.dart';
+import 'payment_settings_screen.dart';
 
 class CreatorDashboardScreen extends StatefulWidget {
   const CreatorDashboardScreen({super.key});
@@ -285,22 +288,45 @@ class _CreatorDashboardScreenState extends State<CreatorDashboardScreen>
   Widget _buildTabBar() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.shadow,
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: TabBar(
         controller: _tabController,
-        labelColor: AppColors.monetizationAccent,
-        unselectedLabelColor: AppColors.textSecondary,
+        splashBorderRadius: BorderRadius.circular(10),
+        overlayColor: WidgetStateProperty.all(Colors.transparent),
+        dividerColor: Colors.transparent,
+        indicatorSize: TabBarIndicatorSize.tab,
+        indicatorAnimation: TabIndicatorAnimation.elastic,
+        indicatorPadding: EdgeInsets.zero,
         indicator: BoxDecoration(
-          color: AppColors.monetizationAccent.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
+          color: AppColors.monetizationAccent,
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.monetizationAccent.withOpacity(0.35),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
+        labelColor: Colors.white,
+        unselectedLabelColor: AppColors.textSecondary,
+        labelStyle: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700),
+        unselectedLabelStyle: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w500),
         tabs: const [
-          Tab(text: 'Overview'),
-          Tab(text: 'Campaigns'),
-          Tab(text: 'Payouts'),
+          Tab(height: 42, text: 'Overview'),
+          Tab(height: 42, text: 'Campaigns'),
+          Tab(height: 42, text: 'Payouts'),
         ],
       ),
     );
@@ -496,21 +522,21 @@ class _CreatorDashboardScreenState extends State<CreatorDashboardScreen>
               Icons.campaign,
               'Browse Campaigns',
               'Find new campaigns to join',
-              () => _showComingSoon('Browse Campaigns'),
+              _browseCampaigns,
             ),
             const SizedBox(height: 12),
             _buildActionButton(
               Icons.analytics,
               'View Analytics',
               'Detailed performance insights',
-              () => _showComingSoon('Analytics'),
+              _viewAnalytics,
             ),
             const SizedBox(height: 12),
             _buildActionButton(
               Icons.settings,
               'Payment Settings',
               'Manage payout methods',
-              () => _showComingSoon('Payment Settings'),
+              _openPaymentSettings,
             ),
           ],
         ),
@@ -869,9 +895,36 @@ class _CreatorDashboardScreenState extends State<CreatorDashboardScreen>
     );
   }
 
-  void _showComingSoon(String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$feature - Coming soon!')),
+  Future<void> _browseCampaigns() async {
+    final joined = await Navigator.push<List<Map<String, dynamic>>>(
+      context,
+      MaterialPageRoute(builder: (_) => const BrowseCampaignsScreen()),
+    );
+    if (joined != null && joined.isNotEmpty) {
+      setState(() {
+        _campaigns.insertAll(0, joined);
+      });
+    }
+  }
+
+  void _viewAnalytics() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CampaignAnalyticsScreen(
+          campaigns: _campaigns,
+          totalViews: _totalViews,
+          totalEarnings: _totalEarnings,
+          connectCount: _connectCount,
+        ),
+      ),
+    );
+  }
+
+  void _openPaymentSettings() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const PaymentSettingsScreen()),
     );
   }
 }

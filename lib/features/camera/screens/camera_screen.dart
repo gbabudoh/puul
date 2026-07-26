@@ -1,8 +1,6 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../../core/constants/app_colors.dart';
 
 class CameraScreen extends StatefulWidget {
   final Map<String, dynamic> category;
